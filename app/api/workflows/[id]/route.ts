@@ -175,8 +175,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
     where: { workflowId: id },
     select: { id: true },
   });
-  
-  const runIds = runs.map((r) => r.id);
+
+  const runIds = runs.map((r: { id: string }) => r.id);
 
   // #region agent log
   fetch(DEBUG_INGEST_URL, {
@@ -200,6 +200,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const nodeExecutionDelete = await prisma.nodeExecution.deleteMany({
       where: { runId: { in: runIds } },
     });
+
     // #region agent log
     fetch(DEBUG_INGEST_URL, {
       method: "POST",
