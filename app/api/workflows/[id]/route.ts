@@ -171,10 +171,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
   }
 
-  const runs = await prisma.workflowRun.findMany({
+  const runs: { id: string }[] = await prisma.workflowRun.findMany({
     where: { workflowId: id },
     select: { id: true },
   });
+  
   const runIds = runs.map((r) => r.id);
 
   // #region agent log
