@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { requireSessionUserId } from "@/lib/api/session";
@@ -73,7 +72,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const workflow = await prisma.workflow.update({
     where: { id },
-    data: { graphJson: graphJson as Prisma.InputJsonValue },
+    data: { graphJson: graphJson as unknown as object },
   });
 
   return NextResponse.json(workflow);
