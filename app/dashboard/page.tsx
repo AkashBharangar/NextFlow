@@ -14,7 +14,8 @@ export default async function DashboardPage() {
     redirect("/auth/signin?callbackUrl=/dashboard");
   }
 
-  const workflows = await prisma.workflow.findMany({
+  const workflows: { id: string; name: string; updatedAt: Date }[] =
+    await prisma.workflow.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: "desc" },
   });
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2">
-            {workflows.map((w) => (
+            {workflows.map((w: { id: string; name: string; updatedAt: Date }) => (
               <WorkflowCard
                 key={w.id}
                 id={w.id}

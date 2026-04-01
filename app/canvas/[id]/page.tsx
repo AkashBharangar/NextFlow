@@ -52,7 +52,7 @@ function WorkflowRfNode({ id, data, type }: NodeProps) {
 
 function graphJsonToNodes(raw: unknown): Node[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
+  return raw.map((item: unknown) => {
     const n = item as Record<string, unknown>;
     const pos = n.position as { x?: unknown; y?: unknown } | undefined;
     const workflowType =
@@ -94,7 +94,7 @@ function graphJsonToNodes(raw: unknown): Node[] {
 
 function graphJsonToEdges(raw: unknown): Edge[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
+  return raw.map((item: unknown) => {
     const e = item as Record<string, unknown>;
     return {
       id: String(e.id),
