@@ -1,5 +1,3 @@
-import type { Prisma } from "@prisma/client";
-
 import { prisma } from "@/lib/prisma";
 import type { GraphEdge, GraphNode } from "@/types/workflow";
 
@@ -33,7 +31,7 @@ async function markNodeRunning(
         status: "running",
         startedAt: new Date(),
         nodeType: node.type,
-        inputs: inputs as Prisma.InputJsonValue,
+        inputs: inputs as unknown as object,
       },
     });
   } else {
@@ -44,7 +42,7 @@ async function markNodeRunning(
         nodeType: node.type,
         status: "running",
         startedAt: new Date(),
-        inputs: inputs as Prisma.InputJsonValue,
+        inputs: inputs as unknown as object,
       },
     });
   }
@@ -59,7 +57,7 @@ async function markNodeComplete(
     where: { runId: ctx.runId, nodeId: node.id },
     data: {
       status: "success",
-      outputs: (outputs ?? {}) as Prisma.InputJsonValue,
+      outputs: (outputs ?? {}) as unknown as object,
       finishedAt: new Date(),
       error: null,
     },
@@ -72,7 +70,7 @@ async function markNodeComplete(
         nodeId: node.id,
         nodeType: node.type,
         status: "success",
-        outputs: (outputs ?? {}) as Prisma.InputJsonValue,
+        outputs: (outputs ?? {}) as unknown as object,
         finishedAt: new Date(),
       },
     });
