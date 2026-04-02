@@ -82,3 +82,14 @@ worker.on("failed", (job, err) => {
 });
 
 console.log("[worker] listening on queue workflow-runs");
+
+import http from 'http'
+
+const PORT = process.env.PORT || 3001
+
+http.createServer((req, res) => {
+  res.writeHead(200)
+  res.end('worker ok')
+}).listen(PORT, () => {
+  console.log(`[worker] health check listening on port ${PORT}`)
+})
