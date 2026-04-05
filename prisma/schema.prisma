@@ -6,13 +6,15 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Auth models (unchanged) ─────────────────────────────────────────────────
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime   @default(now())
   accounts      Account[]
   sessions      Session[]
   workflows     Workflow[]
@@ -31,8 +33,7 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -52,6 +53,8 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// ─── Core domain (unchanged) ─────────────────────────────────────────────────
 
 model Workflow {
   id        String        @id @default(cuid())
@@ -79,18 +82,97 @@ model WorkflowRun {
   @@index([workflowId])
 }
 
+// ─── Stage 2: NodeExecution (extended) ───────────────────────────────────────
+
 model NodeExecution {
-  id         String      @id @default(cuid())
-  runId      String
-  run        WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  nodeId     String
-  nodeType   String
-  status     String
-  inputs     Json?
-  outputs    Json?
-  error      String?
-  startedAt  DateTime?
-  finishedAt DateTime?
+  id             String      @id @default(cuid())
+  runId          String
+  run            WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  nodeId         String
+  nodeType       String
+  status         String      @default("pending")
+  inputs         Json?
+  outputs        Json?
+  error          String?
+  errorCode      String?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+
+  // Retry tracking
+  attempt        Int         @default(1)
+  maxAttempts    Int         @default(3)
+
+  // Idempotency — format: runId:nodeId:attempt
+  idempotencyKey String?     @unique
+
+  // For async providers (Replicate, Runway) — stores their job ID
+  externalJobId  String?
+
+  // S3/R2 key for the generated file (populated after upload)
+  storageKey     String?
+
+  // Relations to Stage 2 tables
+  fileAssets     FileAsset[]
+  jobQueueEntry  JobQueue?
 
   @@index([runId])
+  @@index([idempotencyKey])
+  @@index([externalJobId])
+}
+
+// ─── Stage 2: ModelProvider ───────────────────────────────────────────────────
+
+model ModelProvider {
+  id          String   @id @default(cuid())
+  name        String // "Hugging Face"
+  slug        String   @unique // "huggingface" | "replicate" | "stability"
+  baseUrl     String? // provider API base URL
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Stage 2: FileAsset ───────────────────────────────────────────────────────
+
+model FileAsset {
+  id              String        @id @default(cuid())
+  nodeExecutionId String
+  nodeExecution   NodeExecution @relation(fields: [nodeExecutionId], references: [id], onDelete: Cascade)
+  s3Key           String // e.g. outputs/userId/runId/nodeId/uuid.png
+  cdnUrl          String // public or signed URL served to frontend
+  mimeType        String // "image/png" | "image/jpeg" | "video/mp4"
+  sizeBytes       Int?
+  createdAt       DateTime      @default(now())
+
+  @@index([nodeExecutionId])
+}
+
+// ─── Stage 2: JobQueue ────────────────────────────────────────────────────────
+
+model JobQueue {
+  id              String        @id @default(cuid())
+  nodeExecutionId String        @unique
+  nodeExecution   NodeExecution @relation(fields: [nodeExecutionId], references: [id], onDelete: Cascade)
+
+  // Mirror of BullMQ job state — for audit + dead-letter queries
+  status          String        @default("pending")
+  // pending | running | polling | completed | failed | dead
+
+  idempotencyKey  String?       @unique
+  externalJobId   String? // provider-side async job id
+
+  attempt         Int           @default(1)
+  maxAttempts     Int           @default(3)
+
+  // Error info (populated on failure)
+  errorCode       String?
+  // RATE_LIMIT | TIMEOUT | INVALID_INPUT | PROVIDER_ERROR
+  errorMessage    String?       @db.Text
+
+  queuedAt        DateTime      @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  @@index([status])
+  @@index([externalJobId])
 }
