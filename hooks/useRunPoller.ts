@@ -8,7 +8,8 @@ import { useWorkflowStore } from "@/store/workflow-store";
 
 function mapExecutionStatus(
   dbStatus: string,
-): "idle" | "running" | "success" | "error" {
+): "idle" | "running" | "success" | "error" | "polling" {
+  if (dbStatus === "polling") return "polling";
   if (dbStatus === "success") return "success";
   if (dbStatus === "failed") return "error";
   return "running";
@@ -64,7 +65,10 @@ export function useRunPoller(runId: string | null) {
 
         const execs = run.nodeExecutions ?? [];
         for (const ex of execs) {
-          setNodeStatus(ex.nodeId, mapExecutionStatus(ex.status));
+          setNodeStatus(
+            ex.nodeId,
+            mapExecutionStatus(ex.status) as Parameters<typeof setNodeStatus>[1],
+          );
           if (ex.status === "failed" && typeof ex.error === "string" && ex.error.trim().length > 0) {
             const key = `${runId}:${ex.nodeId}:${ex.error}`;
             if (!toastedNodeFailuresRef.current.has(key)) {
@@ -90,7 +94,14 @@ export function useRunPoller(runId: string | null) {
           toast.error("Workflow run failed");
         }
 
-        if (run.status === "success" || run.status === "failed") {
+        const isTerminal =
+          run.status === "success" ||
+          run.status === "failed" ||
+          run.status === "cancelled";
+        const hasPollingNodes = run.nodeExecutions?.some(
+          (n: { status: string }) => n.status === "polling",
+        ) ?? false;
+        if (isTerminal && !hasPollingNodes) {
           cancelled = true;
           clearTimer();
           setRunId(null);
@@ -101,7 +112,7 @@ export function useRunPoller(runId: string | null) {
     };
 
     void poll();
-    intervalId = setInterval(poll, 2000);
+    intervalId = setInterval(poll, 3000);
 
     return () => {
       cancelled = true;

@@ -7,6 +7,7 @@ export const nodeHandlers: Record<
   (
     config: Record<string, unknown>,
     inputs: Record<string, unknown>,
+    context?: { nodeExecutionId?: string; runId?: string; nodeId?: string },
   ) => Promise<Record<string, unknown>>
 > = {
   "prompt-input": promptInputHandler,

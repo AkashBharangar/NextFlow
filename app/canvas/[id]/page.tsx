@@ -28,7 +28,7 @@ import {
 } from "@/components/nodes/node-status-styles";
 import { OutputViewerNode } from "@/components/nodes/OutputViewerNode";
 import { PromptInputNode } from "@/components/nodes/PromptInputNode";
-import { useRunPoller } from "@/hooks/useRunPoller";
+import { useRunStream } from "@/hooks/useRunStream";
 import { serializeWorkflowGraph } from "@/lib/canvas/serialize-workflow-graph";
 import { useWorkflowStore } from "@/store/workflow-store";
 import Link from "next/link";
@@ -246,7 +246,7 @@ type FlowCanvasProps = {
 
 function FlowCanvas({ saveIndicator, onRun, runDisabled, runLabel }: FlowCanvasProps) {
   const runId = useWorkflowStore((s) => s.runId);
-  useRunPoller(runId);
+  useRunStream(runId);
 
   const nodes = useWorkflowStore((s) => s.nodes);
   const edges = useWorkflowStore((s) => s.edges);

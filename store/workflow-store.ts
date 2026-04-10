@@ -1,7 +1,7 @@
 import type { Edge, Node } from "@xyflow/react";
 import { create } from "zustand";
 
-export type NodeRuntimeStatus = "idle" | "running" | "success" | "error";
+export type NodeRuntimeStatus = "idle" | "running" | "success" | "error" | "polling";
 
 type WorkflowStore = {
   nodes: Node[];

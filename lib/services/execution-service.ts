@@ -71,10 +71,19 @@ export async function triggerRun(workflowId: string): Promise<string> {
   });
 
   const queue = getWorkflowRunsQueue();
-  await queue.add("workflow-run", {
-    runId: run.id,
-    workflowId,
-  });
+  await queue.add(
+    "workflow-run",
+    { runId: run.id, workflowId },
+    {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 2000,
+      },
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 200 },
+    },
+  );
 
   return run.id;
 }
