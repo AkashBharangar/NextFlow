@@ -4,12 +4,15 @@ import type { GraphEdge, GraphNode } from "@/types/workflow";
 export type ExecutionContext = {
   runId: string;
   outputs: Map<string, Record<string, unknown>>;
+  nodeExecutionIds: Map<string, string>;
+  pendingNodeCount: number;
 };
 
 export type NodeHandler = (
   node: GraphNode,
   inputs: Record<string, unknown>,
   ctx: ExecutionContext,
+  nodeExecutionId: string,
 ) => Promise<Record<string, unknown>>;
 
 /** Register handlers by `GraphNode.type` before running the DAG. */
@@ -19,7 +22,7 @@ async function markNodeRunning(
   ctx: ExecutionContext,
   node: GraphNode,
   inputs: Record<string, unknown>,
-): Promise<void> {
+): Promise<string> {
   const existing = await prisma.nodeExecution.findFirst({
     where: { runId: ctx.runId, nodeId: node.id },
   });
@@ -34,8 +37,10 @@ async function markNodeRunning(
         inputs: inputs as unknown as object,
       },
     });
+    ctx.nodeExecutionIds.set(node.id, existing.id);
+    return existing.id;
   } else {
-    await prisma.nodeExecution.create({
+    const created = await prisma.nodeExecution.create({
       data: {
         runId: ctx.runId,
         nodeId: node.id,
@@ -45,6 +50,8 @@ async function markNodeRunning(
         inputs: inputs as unknown as object,
       },
     });
+    ctx.nodeExecutionIds.set(node.id, created.id);
+    return created.id;
   }
 }
 
@@ -124,14 +131,14 @@ export async function executeNode(
     inputs[e.targetHandle] = upstream?.[e.sourceHandle];
   }
 
-  await markNodeRunning(ctx, node, inputs);
+  const nodeExecutionId = await markNodeRunning(ctx, node, inputs);
 
   const handler = nodeHandlers.get(node.type);
   if (!handler) {
     throw new Error(`No handler registered for node type: ${node.type}`);
   }
 
-  const outputs = await handler(node, inputs, ctx);
+  const outputs = await handler(node, inputs, ctx, nodeExecutionId);
   ctx.outputs.set(node.id, outputs);
   await markNodeComplete(node, ctx);
 }
@@ -160,7 +167,12 @@ export async function runDAG(
   let waveIds = [...nodeIds].filter((id) => inDegree.get(id) === 0);
 
   let processed = 0;
-  const ctx: ExecutionContext = { runId, outputs: new Map() };
+  const ctx: ExecutionContext = {
+    runId,
+    outputs: new Map(),
+    nodeExecutionIds: new Map(),
+    pendingNodeCount: nodes.length,
+  };
 
   while (waveIds.length > 0) {
     const waveNodes = waveIds.map((id) => idToNode.get(id)!);
@@ -185,6 +197,12 @@ export async function runDAG(
     }
 
     processed += waveNodes.length;
+     ctx.pendingNodeCount -= waveNodes.length;
+     console.log("[dag-runner] wave complete", {
+       runId,
+       waveSize: waveNodes.length,
+       remainingNodes: ctx.pendingNodeCount,
+     });
 
     const nextWaveIds: string[] = [];
     for (const node of waveNodes) {

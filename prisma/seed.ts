@@ -35,6 +35,39 @@ async function main() {
       },
     });
   }
+
+  const providers = [
+    {
+      id: "provider_huggingface",
+      name: "Hugging Face",
+      slug: "huggingface",
+      baseUrl: "https://router.huggingface.co",
+      isActive: true,
+    },
+    {
+      id: "provider_replicate",
+      name: "Replicate",
+      slug: "replicate",
+      baseUrl: "https://api.replicate.com",
+      isActive: true,
+    },
+    {
+      id: "provider_stability",
+      name: "Stability AI",
+      slug: "stability",
+      baseUrl: "https://api.stability.ai",
+      isActive: false,
+    },
+  ];
+
+  for (const p of providers) {
+    await prisma.modelProvider.upsert({
+      where: { slug: p.slug },
+      update: { name: p.name, baseUrl: p.baseUrl, isActive: p.isActive },
+      create: p,
+    });
+    console.log(`Seeded provider: ${p.slug}`);
+  }
 }
 
 main()

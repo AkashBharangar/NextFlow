@@ -1,9 +1,11 @@
 import type { NodeRuntimeStatus } from "@/store/workflow-store";
 
 export function nodeStatusBorderClass(status: NodeRuntimeStatus): string {
-  switch (status) {
+  switch (status as string) {
     case "running":
       return "border-blue-400 shadow-[0_0_0_1px_rgba(96,165,250,0.8)] animate-pulse";
+    case "polling":
+      return "border-indigo-400 shadow-[0_0_0_1px_rgba(129,140,248,0.8)]";
     case "success":
       return "border-green-400";
     case "error":
@@ -14,5 +16,10 @@ export function nodeStatusBorderClass(status: NodeRuntimeStatus): string {
 }
 
 export function nodeStatusLabel(status: NodeRuntimeStatus): string {
-  return status;
+  switch (status as string) {
+    case "polling":
+      return "Polling...";
+    default:
+      return status;
+  }
 }

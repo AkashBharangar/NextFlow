@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import { requireSessionUserId } from "@/lib/api/session";
 import { prisma } from "@/lib/prisma";
 
@@ -20,12 +19,19 @@ export async function GET(_request: Request, context: RouteContext) {
     select: {
       id: true,
       status: true,
+      startedAt: true,
+      finishedAt: true,
       nodeExecutions: {
         select: {
           nodeId: true,
           status: true,
           outputs: true,
           error: true,
+          errorCode: true,
+          externalJobId: true,
+          attempt: true,
+          startedAt: true,
+          finishedAt: true,
         },
       },
     },
