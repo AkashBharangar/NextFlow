@@ -1,7 +1,9 @@
 import type { AIModelAdapter, ModelInput, ModelOutput, SubmitResult } from "./types";
 
-const HF_SDXL_URL =
-  "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell";
+const ALLOWED_HF_MODELS = new Set([
+  "black-forest-labs/FLUX.1-schnell",
+  "black-forest-labs/FLUX.1-dev",
+]);
 
 export class HuggingFaceAdapter implements AIModelAdapter {
   provider = "huggingface";
@@ -18,11 +20,14 @@ export class HuggingFaceAdapter implements AIModelAdapter {
       throw new Error("HuggingFaceAdapter: prompt must be a non-empty string");
     }
 
-    // Use model URL from input if provided, otherwise fall back to SDXL default
-    const url =
-      typeof input.params.modelUrl === "string"
-        ? input.params.modelUrl
-        : HF_SDXL_URL;
+    if (!ALLOWED_HF_MODELS.has(input.model)) {
+      throw new Error(
+        `HuggingFaceAdapter: model "${input.model}" is not on the allowlist`,
+      );
+    }
+
+    // Derive the canonical URL from the allowlisted model ID
+    const url = `https://router.huggingface.co/hf-inference/models/${input.model}`;
 
     const res = await fetch(url, {
       method: "POST",

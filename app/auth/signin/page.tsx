@@ -6,7 +6,15 @@ import { Suspense, useState } from "react";
 
 function SignInForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const rawCallback = searchParams.get("callbackUrl") ?? "";
+  // Only allow relative paths that start with a single slash.
+  // This blocks open redirects to external domains (e.g. //evil.com or https://evil.com).
+  const callbackUrl =
+    typeof rawCallback === "string" &&
+    rawCallback.startsWith("/") &&
+    !rawCallback.startsWith("//")
+      ? rawCallback
+      : "/dashboard";
   const [busy, setBusy] = useState(false);
 
   return (

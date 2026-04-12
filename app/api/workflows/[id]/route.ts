@@ -2,15 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireSessionUserId } from "@/lib/api/session";
 import { prisma } from "@/lib/prisma";
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    Object.getPrototypeOf(value) === Object.prototype
-  );
-}
+import { putWorkflowBodySchema, patchWorkflowBodySchema } from "@/lib/validators/api-schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -56,19 +48,14 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    !("graphJson" in body) ||
-    !isPlainObject((body as { graphJson: unknown }).graphJson)
-  ) {
+  const putParsed = putWorkflowBodySchema.safeParse(body);
+  if (!putParsed.success) {
     return NextResponse.json(
-      { error: "Body must include `graphJson` as a plain object" },
+      { error: putParsed.error.issues[0]?.message ?? "Invalid request body" },
       { status: 400 },
     );
   }
-
-  const graphJson = (body as { graphJson: Record<string, unknown> }).graphJson;
+  const { graphJson } = putParsed.data;
 
   const workflow = await prisma.workflow.update({
     where: { id },
@@ -102,25 +89,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    !("name" in body) ||
-    typeof (body as { name?: unknown }).name !== "string"
-  ) {
+  const patchParsed = patchWorkflowBodySchema.safeParse(body);
+  if (!patchParsed.success) {
     return NextResponse.json(
-      { error: "Body must include `name` as a string" },
+      { error: patchParsed.error.issues[0]?.message ?? "Invalid request body" },
       { status: 400 },
     );
   }
-
-  const name = (body as { name: string }).name.trim();
-  if (name.length === 0 || name.length > 100) {
-    return NextResponse.json(
-      { error: "Name must be non-empty and at most 100 characters" },
-      { status: 400 },
-    );
-  }
+  const { name } = patchParsed.data;
 
   const workflow = await prisma.workflow.update({
     where: { id },
@@ -130,12 +106,6 @@ export async function PATCH(request: Request, context: RouteContext) {
   return NextResponse.json(workflow);
 }
 
-// #region agent log
-const DEBUG_INGEST_URL =
-  "http://127.0.0.1:7590/ingest/2d1a0384-69ab-4a63-a787-09d6587de1c2";
-const DEBUG_SESSION_ID = "9d1b9a";
-// #endregion
-
 export async function DELETE(_request: Request, context: RouteContext) {
   const userId = await requireSessionUserId();
   if (!userId) {
@@ -143,24 +113,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-
-  // #region agent log
-  fetch(DEBUG_INGEST_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": DEBUG_SESSION_ID,
-    },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      hypothesisId: "dashboard_delete_api",
-      location: "runs/[id]/route.ts:DELETE",
-      message: "delete handler entered",
-      data: { hasWorkflowId: typeof id === "string" && id.length > 0 },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   const existing = await prisma.workflow.findFirst({
     where: { id, userId },
@@ -178,76 +130,19 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const runIds = runs.map((r: { id: string }) => r.id);
 
-  // #region agent log
-  fetch(DEBUG_INGEST_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": DEBUG_SESSION_ID,
-    },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      hypothesisId: "dashboard_delete_api",
-      location: "runs/[id]/route.ts:DELETE",
-      message: "ownership verified, cascading deletes",
-      data: { runCount: runIds.length },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (runIds.length > 0) {
-    const nodeExecutionDelete = await prisma.nodeExecution.deleteMany({
+    await prisma.nodeExecution.deleteMany({
       where: { runId: { in: runIds } },
     });
-
-    // #region agent log
-    fetch(DEBUG_INGEST_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": DEBUG_SESSION_ID,
-      },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION_ID,
-        hypothesisId: "dashboard_delete_api",
-        location: "runs/[id]/route.ts:DELETE",
-        message: "deleted nodeExecutions",
-        data: { count: nodeExecutionDelete.count },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }
 
-  const workflowRunDelete = await prisma.workflowRun.deleteMany({
+  await prisma.workflowRun.deleteMany({
     where: { workflowId: id },
   });
 
-  const workflowDelete = await prisma.workflow.delete({
+  await prisma.workflow.delete({
     where: { id },
   });
-
-  // #region agent log
-  fetch(DEBUG_INGEST_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": DEBUG_SESSION_ID,
-    },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      hypothesisId: "dashboard_delete_api",
-      location: "runs/[id]/route.ts:DELETE",
-      message: "delete complete",
-      data: {
-        workflowRunCountDeleted: workflowRunDelete.count,
-        workflowCountDeleted: workflowDelete.id ? 1 : 0,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   return NextResponse.json({ success: true });
 }

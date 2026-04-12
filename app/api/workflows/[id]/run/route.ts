@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireSessionUserId } from "@/lib/api/session";
 import { prisma } from "@/lib/prisma";
 import { triggerRun } from "@/lib/services/execution-service";
+import { getRunRateLimiter } from "@/lib/services/rate-limiter";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,34 @@ export async function POST(_request: Request, context: RouteContext) {
   });
   if (!owned) {
     return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+  }
+
+  // Rate limit: 5 runs per user per 60 seconds
+  try {
+    const limiter = getRunRateLimiter();
+    const { success, limit, remaining, reset } = await limiter.limit(userId);
+    if (!success) {
+      return NextResponse.json(
+        {
+          error: "Too many workflow runs. Please wait before running again.",
+          limit,
+          remaining,
+          reset,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
+            "X-RateLimit-Limit": String(limit),
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+  } catch (rateLimitError) {
+    // If rate limiting fails (e.g. Redis unavailable), log and allow the
+    // request through — do not block legitimate users on infra failure.
+    console.error("[run] rate limit check failed, allowing request", rateLimitError);
   }
 
   try {
