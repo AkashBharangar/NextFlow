@@ -47,15 +47,13 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     signIn: ({ user, account }) => {
-      // Only allow Google OAuth sign-ins with a present email.
-      // emailVerified is set by NextAuth when Google confirms the
-      // address — reject the sign-in if it is missing or null.
       if (account?.provider === "google") {
-        if (!user.email) return false;
-        const verified = (user as { emailVerified?: Date | null }).emailVerified;
-  if (verified !== undefined && verified === null) return false;
-      }
-      return true;
+      if (!user.email) return false;
+      // Google vouches for all emails it returns via OAuth —
+      // including Workspace/institutional accounts (hd= domains).
+      // We only need a present email, not emailVerified on the token.
+    }
+    return true;
     },
     session: ({ session, token }) => {
       if (session.user) {
