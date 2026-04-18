@@ -53,7 +53,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google") {
         if (!user.email) return false;
         const verified = (user as { emailVerified?: Date | null }).emailVerified;
-        if (verified === null) return false;
+  if (verified !== undefined && verified === null) return false;
       }
       return true;
     },
