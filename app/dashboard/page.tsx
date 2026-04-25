@@ -1,59 +1,83 @@
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
+import ParticleWrapper from "@/app/dashboard/ParticleWrapper";
 import { DashboardNav } from "@/app/dashboard/dashboard-nav";
 import { NewWorkflowButton } from "@/app/dashboard/new-workflow-button";
+import { WorkflowCard } from "@/app/dashboard/workflow-card";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { WorkflowCard } from "@/app/dashboard/workflow-card";
+
+function formatRelativeTime(date: Date | string): string {
+  const now = Date.now();
+  const then = new Date(date).getTime();
+  const diff = Math.floor((now - then) / 1000);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    redirect("/auth/signin?callbackUrl=/dashboard");
-  }
+  if (!session?.user?.id) redirect("/auth/signin");
 
-  const workflows: { id: string; name: string; updatedAt: Date }[] =
-    await prisma.workflow.findMany({
+  const workflows = await prisma.workflow.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: "desc" },
   });
 
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-[#080810] flex">
+      <ParticleWrapper />
       <DashboardNav />
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+
+      <div className="flex-1 ml-16 flex flex-col min-h-screen">
+        <div className="sticky top-0 z-40 bg-[#080810]/80 backdrop-blur-xl border-b border-white/[0.06] px-8 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Workflows</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Open a canvas or create a new workflow.
+            <h1 className="text-lg font-bold text-white tracking-tight">
+              My Workflows
+            </h1>
+            <p className="text-white/35 text-xs mt-0.5">
+              {workflows.length} workflow{workflows.length !== 1 ? "s" : ""}
             </p>
           </div>
           <NewWorkflowButton />
         </div>
 
-        {workflows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <p className="text-gray-400 text-sm">No workflows yet</p>
-            <p className="text-gray-600 text-xs">
-              Click &quot;New workflow&quot; to create your first one
-            </p>
-          </div>
-        ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {workflows.map((w: { id: string; name: string; updatedAt: Date }) => (
-              <WorkflowCard
-                key={w.id}
-                id={w.id}
-                name={w.name}
-                updatedAtLabel={w.updatedAt.toLocaleString()}
-              />
-            ))}
-          </ul>
-        )}
-      </main>
+        <div className="flex-1 px-8 py-8">
+          {workflows.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <div className="w-20 h-20 rounded-3xl bg-purple-500/[0.08] border border-purple-500/20 flex items-center justify-center text-3xl text-purple-400/40 mb-6 shadow-[0_0_60px_rgba(124,92,252,0.1)]">
+                ✦
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">
+                Your canvas is empty
+              </h2>
+              <p className="text-white/35 text-sm mb-8 max-w-xs leading-relaxed">
+                Create your first workflow to start generating images, videos,
+                and more with AI.
+              </p>
+              <NewWorkflowButton />
+            </div>
+          ) : (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {workflows.map((workflow) => (
+                <WorkflowCard
+                  key={workflow.id}
+                  id={workflow.id}
+                  name={workflow.name}
+                  updatedAtLabel={formatRelativeTime(workflow.updatedAt)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

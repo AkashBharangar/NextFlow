@@ -14,5 +14,6 @@ export const config = {
     "/api/workflows",
     "/api/workflows/:path*",
     "/api/runs/:path*",
+    "/api/account/:path*",
   ],
 };

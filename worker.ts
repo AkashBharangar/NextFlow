@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 import { Worker, type Job } from "bullmq";
 import IORedis from "ioredis";
+import * as Sentry from "@sentry/nextjs";
 
 import { nodeHandlers as engineHandlers, runDAG } from "@/lib/engine/dag-runner";
 import { registry as adapterRegistry } from "@/lib/adapters";
@@ -178,6 +179,15 @@ worker.on("failed", async (job, err) => {
     error: err.message,
   });
 
+  Sentry.captureException(err, {
+    tags: {
+      jobId: job.id ?? "unknown",
+      runId,
+      errorCode,
+      isLastAttempt: String(isLastAttempt),
+    },
+  });
+
   // On INVALID_INPUT: fail immediately, do not wait for max attempts
   const shouldMarkDead = isLastAttempt || !isRetryable(errorCode);
 
@@ -284,6 +294,13 @@ const pollingWorker = new Worker<PollingJobData>(
           data: { status: "failed", finishedAt: new Date() },
         });
         console.error("[polling-worker] timeout", { externalId, nodeId });
+        Sentry.captureMessage(
+          `Polling timeout after ${maxPollAttempts} attempts`,
+          {
+            level: "error",
+            tags: { externalId, nodeId, runId, provider },
+          },
+        );
         return;
       }
 
@@ -320,6 +337,10 @@ const pollingWorker = new Worker<PollingJobData>(
         data: { status: "failed", finishedAt: new Date() },
       });
       console.error("[polling-worker] provider reported failure", { externalId });
+      Sentry.captureMessage("Provider reported polling failure", {
+        level: "error",
+        tags: { externalId, nodeId, runId, provider },
+      });
       return;
     }
 
@@ -380,19 +401,22 @@ pollingWorker.on("completed", (job) => {
 
 pollingWorker.on("failed", (job, err) => {
   console.error("[polling-worker] job failed", job?.id, err.message);
+  Sentry.captureException(err, {
+    tags: { jobId: job?.id ?? "unknown" },
+  });
 });
 
 console.log("[worker] listening on queue workflow-runs");
 
 // ─── Health check server (keeps Render alive) ─────────────────────────────────
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 http
   .createServer((req, res) => {
     res.writeHead(200);
     res.end("worker ok");
   })
-  .listen(PORT, () => {
+  .listen(PORT, "0.0.0.0", () => {
     console.log(`[worker] health check listening on port ${PORT}`);
   });

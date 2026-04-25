@@ -1,4 +1,5 @@
 import { registry } from "@/lib/adapters";
+import { assertAllowedModel } from "@/lib/services/model-allowlist";
 import { isStorageConfigured } from "@/lib/storage/cloudinary-client";
 import { saveOutputToStorage } from "@/lib/storage/storage-service";
 
@@ -18,6 +19,8 @@ export async function imageGenHandler(
     typeof config.model === "string" && config.model.trim()
       ? config.model.trim()
       : "black-forest-labs/FLUX.1-schnell";
+
+  assertAllowedModel(provider, model);
 
   const adapter = registry.get(provider);
 
