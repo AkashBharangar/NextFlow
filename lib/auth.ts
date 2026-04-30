@@ -48,12 +48,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     signIn: ({ user, account }) => {
       if (account?.provider === "google") {
-      if (!user.email) return false;
-      // Google vouches for all emails it returns via OAuth —
-      // including Workspace/institutional accounts (hd= domains).
-      // We only need a present email, not emailVerified on the token.
-    }
-    return true;
+        if (!user.email) return false;
+        // Google vouches for all emails it returns via OAuth —
+        // including Workspace/institutional accounts (hd= domains).
+        // We only need a present email, not emailVerified on the token.
+      }
+      return true;
     },
     session: ({ session, token }) => {
       if (session.user) {
