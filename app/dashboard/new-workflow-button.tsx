@@ -28,7 +28,7 @@ export function NewWorkflowButton() {
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-semibold text-sm rounded-full px-5 py-2.5 hover:scale-105 hover:shadow-[0_0_30px_rgba(124,92,252,0.45)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none transition-all duration-200"
+      className="cursor-pointer flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-semibold text-sm rounded-full px-5 py-2.5 hover:scale-105 hover:shadow-[0_0_30px_rgba(124,92,252,0.45)] disabled:opacity-50 disabled:scale-100 disabled:shadow-none transition-all duration-200"
     >
       {loading ? (
         <>
