@@ -176,3 +176,10 @@ model JobQueue {
   @@index([status])
   @@index([externalJobId])
 }
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("api-docs")
+  createdAt DateTime @default(now())
+}

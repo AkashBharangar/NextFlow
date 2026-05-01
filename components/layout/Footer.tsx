@@ -20,6 +20,12 @@ export function Footer() {
                   ? "/pricing"
                   : label === "Product"
                     ? "/#features"
+                    : label === "API"
+                      ? "/api-docs"
+                      : label === "Blog"
+                        ? "/blog"
+                        : label === "Careers"
+                          ? "/careers"
                     : "#"
               }
               className="text-sm text-white/35 transition-colors hover:text-white/70"
