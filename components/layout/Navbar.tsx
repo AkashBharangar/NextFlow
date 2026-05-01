@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -33,16 +34,16 @@ export function Navbar() {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <a
+        <Link
           href="/"
           className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-lg font-bold text-transparent"
         >
           ✦ Nexflow
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-8 md:flex">
           {["Generate", "Explore", "Pricing"].map((link) => (
-            <a
+            <Link
               key={link}
               href={
                 link === "Generate"
@@ -54,23 +55,23 @@ export function Navbar() {
               className="text-sm text-white/50 transition-colors hover:text-white"
             >
               {link}
-            </a>
+            </Link>
           ))}
         </div>
 
         <div className="flex items-center gap-3">
-          <a
+          <Link
             href="/auth/signin"
             className="hidden text-sm text-white/50 transition-colors hover:text-white md:block"
           >
             Sign in
-          </a>
-          <a
+          </Link>
+          <Link
             href="/auth/signin"
             className="rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-[0_0_20px_rgba(124,92,252,0.4)]"
           >
             Start creating →
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -88,7 +89,7 @@ export function Navbar() {
         <div className="border-b border-white/[0.06] bg-[#080810]/95 px-6 py-4 backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-3">
             {["Generate", "Explore", "Pricing"].map((link) => (
-              <a
+              <Link
                 key={link}
                 href={
                   link === "Generate"
@@ -101,15 +102,15 @@ export function Navbar() {
                 onClick={() => setIsMobileOpen(false)}
               >
                 {link}
-              </a>
+              </Link>
             ))}
-            <a
+            <Link
               href="/auth/signin"
               className="text-sm text-white/50 transition-colors hover:text-white"
               onClick={() => setIsMobileOpen(false)}
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </div>
       ) : null}

@@ -6,7 +6,7 @@ export function SignOutButton() {
   return (
     <button
       onClick={() => signOut({ callbackUrl: "/" })}
-      className="flex items-center justify-center w-10 h-10 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/[0.08] transition-all duration-200 group relative"
+      className="cursor-pointer flex items-center justify-center w-10 h-10 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/[0.08] transition-all duration-200 group relative"
       title="Sign out"
     >
       <svg
