@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "ts-node prisma/seed.ts",
-    "worker": "ts-node -r tsconfig-paths/register worker.ts"
+    "worker:build": "tsc --project tsconfig.worker.json",
+    "worker:start": "node -r tsconfig-paths/register/lib/index.js dist/worker.js",
+    "worker": "npm run worker:build && npm run worker:start"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",

@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./",
+    "noEmit": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true
+  },
+  "include": [
+    "worker.ts",
+    "lib/**/*",
+    "workers/**/*",
+    "queues/**/*",
+    "types/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "app",
+    "components",
+    "pages"
+  ]
+}
