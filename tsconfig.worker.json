@@ -6,7 +6,11 @@
     "noEmit": false,
     "module": "commonjs",
     "moduleResolution": "node",
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "baseUrl": "."
   },
   "include": [
     "worker.ts",
