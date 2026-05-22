@@ -10,7 +10,7 @@
     "lint": "eslint",
     "seed": "ts-node prisma/seed.ts",
     "worker:build": "tsc --project tsconfig.worker.json",
-    "worker:start": "node -r tsconfig-paths/register/lib/index.js dist/worker.js",
+    "worker:start": "node -r tsconfig-paths/register dist/worker.js",
     "worker": "npm run worker:build && npm run worker:start"
   },
   "dependencies": {
