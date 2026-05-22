@@ -2,6 +2,9 @@
   "name": "nexflow",
   "version": "0.1.0",
   "private": true,
+  "_moduleAliases": {
+    "@": "."
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -10,7 +13,7 @@
     "lint": "eslint",
     "seed": "ts-node prisma/seed.ts",
     "worker:build": "tsc --project tsconfig.worker.json",
-    "worker:start": "node -r tsconfig-paths/register dist/worker.js",
+    "worker:start": "node dist/worker.js",
     "worker": "npm run worker:build && npm run worker:start"
   },
   "dependencies": {
@@ -28,6 +31,7 @@
     "cloudinary": "^2.9.0",
     "framer-motion": "^12.38.0",
     "ioredis": "^5.10.1",
+    "module-alias": "^2.3.4",
     "next": "16.2.1",
     "next-auth": "^4.24.13",
     "pg": "^8.20.0",

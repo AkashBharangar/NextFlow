@@ -1,3 +1,4 @@
+import "module-alias/register";
 import { config as loadEnv } from "dotenv";
 import http from "http";
 import { resolve } from "node:path";
